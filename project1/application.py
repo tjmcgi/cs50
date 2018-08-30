@@ -4,6 +4,7 @@ from flask import Flask, session, render_template, request, redirect, url_for
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
+import pandas as pd 
 
 app = Flask(__name__)
 
@@ -46,9 +47,16 @@ def login():
 def signup():
 	return render_template("signup.html")
 
-@app.route("/results/")
+@app.route("/results/", methods=["GET", "POST"])
 def results():
-	return render_template("results.html")
+	if request.method=='POST':
+		isbn = request.form.get("isbn")
+		author = request.form.get("author")
+		title = request.form.get("title")
+		qry = "select * from books where lower(author) like '%%{}%%'".format(author)
+		results = pd.read_sql(qry, engine)
+
+	return render_template("results.html", results = results)
 
 @app.route("/logout/")
 def logout():
