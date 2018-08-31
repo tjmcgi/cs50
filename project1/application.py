@@ -53,8 +53,8 @@ def results():
 		isbn = request.form.get("isbn")
 		author = request.form.get("author")
 		title = request.form.get("title")
-		qry = "select * from books where lower(author) like '%%{}%%'".format(author)
-		results = pd.read_sql(qry, engine)
+		qry = "select * from books where lower(author) like '%%{}%%' and lower(isbn) like '%%{}%%' and lower(title) like '%%{}%%'".format(author, isbn, title)
+		results = db.execute(qry).fetchall()
 
 	return render_template("results.html", results = results)
 
@@ -62,4 +62,13 @@ def results():
 def logout():
 	session.pop('username', None)
 	return redirect(url_for('index'))
+
+@app.route("/book/<isbn>")
+def book_detail(isbn):
+	book_qry="select * from books where isbn = '{}'".format(isbn)
+	review_qry="select * from reviews where isbn= '{}'".format(isbn)
+	result = db.execute(book_qry).fetchone()
+	reviews = db.execute(review_qry).fetchall()
+	return render_template("book_detail.html", result=result, reviews=reviews)
+
 
