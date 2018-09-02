@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 
+{% block heading %}
+Hi, {{ session['user_id'] }}
+{% endblock %}
+
+
 {% block body %}
 	<table class="table">
     <thead>
