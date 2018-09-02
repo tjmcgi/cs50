@@ -37,11 +37,13 @@ def index():
 		try:
 			result = db.execute("SELECT * from users where username = :user and password = :password", {"user": user, "password":password}).fetchone()
 			user_id = result['id']
+			first_name = result['first_name']
 		except:
 			return render_template("error.html", message="Login Failed.")
 
 		## if user authenticates, log them in
-		session['user_id'] = user_id	
+		session['user_id'] = user_id
+		session['first_name'] = first_name 	
 		return render_template("index.html", user_id=user_id, session=session)
 
 		## if user fails to authenticate, send back to log-in screen with failure message
@@ -53,8 +55,20 @@ def index():
 def login():
 	return render_template("login.html")
 
-@app.route("/signup/")
+@app.route("/signup/", methods=["GET", "POST"])
 def signup():
+	if request.method=="POST":
+		username = request.form.get("username")
+		firstname = request.form.get("firstname")
+		password = request.form.get("password")
+		confirm_password = request.form.get("confirm_password")
+		if password != confirm_password:
+			return render_template("error.html", message = "Passwords do not match.")
+		db.execute("insert into users (username, password, first_name) values (:username, :password, :firstname)", {"username": username, "password": password, "firstname": firstname})
+		db.commit()
+		user = db.execute("SELECT * from users where username = :user and password = :password", {"user": username, "password":password}).fetchone()
+		session['user_id'] = user['id']
+		return render_template("index.html", session=session)
 	return render_template("signup.html")
 
 @app.route("/results/", methods=["GET", "POST"])

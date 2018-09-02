@@ -6,16 +6,17 @@
 
 {% block body %}
 <div class="container">
-    <form action="{{ url_for('index') }}" method="post">
-        <input type="text" name="username" placeholder="Enter Your Name">
+    <form action="{{ url_for('signup') }}" method="post">
+        <input type="text" name="username" placeholder="Enter Username">
+        <input type="text" name="firstname" placeholder="Enter First Name">
         <input type="password" name="password" placeholder="Enter Your Password">
-        <input type="password" name="confirm-password" placeholder="Enter Your Password Again">
+        <input type="password" name="confirm_password" placeholder="Enter Your Password Again">
         <button>Submit</button>
     </form>
 </div>
 <div class="container">
 	<form action={{url_for('login')}}>
-		<button>Log in</button>
+		<button>Log In</button>
 	</form>
 </div>
 {% endblock %}

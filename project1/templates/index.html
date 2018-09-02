@@ -2,7 +2,7 @@
 
 {% block heading %}
 	{% if session['user_id'] %}
-    	Welcome {{ session['user_id'] }}! Search for a new book below:
+    	Welcome {{ session['first_name'] }}! Search for a new book below:
     {% endif %}
 	
 {% endblock %}
