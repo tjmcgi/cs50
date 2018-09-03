@@ -1,13 +1,22 @@
+import csv
 import os
 
-from sqlalchemy import create_engine
+from flask import Flask, render_template, request
+from models import *
 
-import pandas as pd 
-from sqlalchemy.orm import scoped_session, sessionmaker
+app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
 
-engine = create_engine(os.getenv("DATABASE_URL"))
-db = scoped_session(sessionmaker(bind=engine))
+def main():
+    f = open("books.csv")
+    reader = csv.reader(f)
+    for isbn, title, author, year in reader:
+        book = Book(isbn=isbn, title=title, author=author, year_published=year)
+        db.session.add(book)
+    db.session.commit()
 
-data = pd.read_csv("books.csv")
-
-data.to_sql("books", engine, if_exists="replace")
+if __name__ == "__main__":
+    with app.app_context():
+        main()

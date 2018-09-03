@@ -1,13 +1,17 @@
 import os
 
-from flask import Flask, session, render_template, request, redirect, url_for
+from flask import Flask, session, render_template, request, redirect, url_for, jsonify
 from flask_session import Session
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_, or_
 from sqlalchemy.orm import scoped_session, sessionmaker
 import pandas as pd
-import requests 
+import requests
+from models import *
 
 app = Flask(__name__)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
 
 # Check for environment variable
 if not os.getenv("DATABASE_URL"):
@@ -18,9 +22,7 @@ app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
-# Set up database
-engine = create_engine(os.getenv("DATABASE_URL"))
-db = scoped_session(sessionmaker(bind=engine))
+
 
 # goodreads api_key
 key = 'jS0w2iLDkRPC5zph3W4TA'
@@ -29,30 +31,28 @@ goodreads_url = "https://www.goodreads.com/book/review_counts.json"
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-	if request.method == "POST":
-		#authenticate user
-		user = request.form.get("username")
-		password = request.form.get("password")
-		##
-		try:
-			result = db.execute("SELECT * from users where username = :user and password = :password", {"user": user, "password":password}).fetchone()
-			user_id = result['id']
-			first_name = result['first_name']
-			message = "Hi {}, you are logged in now!".format(first_name)
-		except:
-			return render_template("error.html", message="Login Failed.")
-
-		## if user authenticates, log them in
-		session['user_id'] = user_id
-		session['first_name'] = first_name
-		session['logged_in'] = True 	
-		return render_template("index.html", user_id=user_id, session=session, message=message)
-
-		## if user fails to authenticate, send back to log-in screen with failure message
-	if session.get('logged_in'):
-		return render_template("index.html", user_id=session['user_id'], session=session)
-	else:
-		return render_template("login.html")
+    if request.method == "POST":
+        #authenticate user
+        user = request.form.get("username")
+        password = request.form.get("password")
+        ##
+        try:
+            result = User.query.filter(and_(User.username==user, User.password==password)).first()
+            user_id = result.id
+            first_name = result.firstname
+            message = "Hi {}, you are logged in now!".format(first_name)
+        except:
+            return render_template("error.html", message="Login Failed.")
+        ## if user authenticates, log them in
+        session['user_id'] = user_id
+        session['first_name'] = first_name
+        session['logged_in'] = True
+        return render_template("index.html", user_id=user_id, session=session, message=message)
+        ## if user fails to authenticate, send back to log-in screen with failure message
+    if session.get('logged_in'):
+        return render_template("index.html", user_id=session['user_id'], session=session)
+    else:
+        return render_template("login.html")
 
 @app.route("/login/")
 def login():
@@ -60,21 +60,20 @@ def login():
 
 @app.route("/signup/", methods=["GET", "POST"])
 def signup():
-	if request.method=="POST":
-		username = request.form.get("username")
-		firstname = request.form.get("firstname")
-		password = request.form.get("password")
-		confirm_password = request.form.get("confirm_password")
-		if password != confirm_password:
-			return render_template("error.html", message = "Passwords do not match.")
-		db.execute("insert into users (username, password, first_name) values (:username, :password, :firstname)", {"username": username, "password": password, "firstname": firstname})
-		db.commit()
-		user = db.execute("SELECT * from users where username = :user and password = :password", {"user": username, "password":password}).fetchone()
-		session['user_id'] = user['id']
-		message = "Hi {}, you are logged in now!".format(user['first_name'])
-		session['first_name'] = user['first_name']
-		return render_template("index.html", session=session, message=message)
-	return render_template("signup.html")
+  if request.method=="POST":
+    username = request.form.get("username")
+    firstname = request.form.get("firstname")
+    password = request.form.get("password")
+    confirm_password = request.form.get("confirm_password")
+    if password != confirm_password:
+      return render_template("error.html", message = "Passwords do not match.")
+    User.add_user(username=username, password=password, firstname=firstname)
+    user = User.query.filter(and_(User.username==username, User.password==password)).first()
+    session['user_id'] = user.id 
+    message = "Hi {}, you are logged in now!".format(user.firstname)
+    session['first_name'] = user.firstname 
+    return render_template("index.html", session=session, message=message)
+  return render_template("signup.html")
 
 @app.route("/results/", methods=["GET", "POST"])
 def results():
@@ -116,5 +115,3 @@ def review():
 		db.execute("insert into reviews (user_id, isbn, review) values (:user_id, :isbn, :review)", {"user_id": user_id, "isbn": isbn, "review": review})
 		db.commit()
 		return render_template('index.html', message = "Review submitted successfully!")
-
-
