@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block heading %}
+Book Details, user: {{session['first_name']}}
+{% endblock %}
+
+{% block body %}
+<div class = "container">
+  <div class = "row">
+    <div class ="col">
+      Title: {{ result['title'] }}
+    </div>
+    <div class="col">
+      Author: {{ result['author'] }}
+    </div>
+  </div>
+  <div class = "row">
+    <div class="col">
+      Year Published: {{result['year_published']}}
+    </div>
+    <div class = "col">
+      isbn: {{result['isbn']}}
+    </div>
+    <div class="col">
+      Goodreads Reviews: {{goodreads_ratings}}
+    </div>
+    <div class = "col">
+      Goodreads Avg. Score: {{goodreads_avg_rating}}
+    </div>
+  </div>
+
+  {% for review in reviews %}
+  <p>Review by: {{review['user_id']}} - </p>
+  <p>{{review['review']}}</p>
+  {% endfor %}
+
+  {% if user_review %}
+  <p> Your Review: {{user_review['review']}} </p>
+  {% endif %}
+
+  {% if not user_has_reviewed %}
+  <p>Do you want to review this book?</p>
+  <form action="{{ url_for('review') }}" method="post">
+    <div class="form-group">
+      <textarea class="form-control" id="review" name ="review" rows="3"></textarea>
+    </div>
+    <div class="col-sm-10">
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+  {% if message %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{message}}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    {% endif %}
+
+{% endblock %}
