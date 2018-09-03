@@ -38,16 +38,19 @@ def index():
 			result = db.execute("SELECT * from users where username = :user and password = :password", {"user": user, "password":password}).fetchone()
 			user_id = result['id']
 			first_name = result['first_name']
+			message = "Hi {}, you are logged in now!".format(first_name)
 		except:
 			return render_template("error.html", message="Login Failed.")
 
 		## if user authenticates, log them in
 		session['user_id'] = user_id
-		session['first_name'] = first_name 	
-		return render_template("index.html", user_id=user_id, session=session)
+		session['first_name'] = first_name
+		session['logged_in'] = True 	
+		return render_template("index.html", user_id=user_id, session=session, message=message)
 
 		## if user fails to authenticate, send back to log-in screen with failure message
-		
+	if session.get('logged_in'):
+		return render_template("index.html", user_id=session['user_id'], session=session)
 	else:
 		return render_template("login.html")
 
@@ -68,7 +71,9 @@ def signup():
 		db.commit()
 		user = db.execute("SELECT * from users where username = :user and password = :password", {"user": username, "password":password}).fetchone()
 		session['user_id'] = user['id']
-		return render_template("index.html", session=session)
+		message = "Hi {}, you are logged in now!".format(user['first_name'])
+		session['first_name'] = user['first_name']
+		return render_template("index.html", session=session, message=message)
 	return render_template("signup.html")
 
 @app.route("/results/", methods=["GET", "POST"])
@@ -77,14 +82,14 @@ def results():
 		isbn = request.form.get("isbn")
 		author = request.form.get("author")
 		title = request.form.get("title")
-		qry = "select * from books where lower(author) like '%%{}%%' and lower(isbn) like '%%{}%%' and lower(title) like '%%{}%%'".format(author, isbn, title)
+		qry = "select * from books where lower(author) like '%%{}%%' and lower(isbn) like '%%{}%%' and lower(title) like '%%{}%%'".format(author.lower(), isbn, title.lower())
 		results = db.execute(qry).fetchall()
 
 	return render_template("results.html", results = results, session=session)
 
 @app.route("/logout/")
 def logout():
-	session.pop('username', None)
+	session.clear()
 	return redirect(url_for('index'))
 
 @app.route("/book/<isbn>")
@@ -110,6 +115,6 @@ def review():
 		isbn = session["isbn"]
 		db.execute("insert into reviews (user_id, isbn, review) values (:user_id, :isbn, :review)", {"user_id": user_id, "isbn": isbn, "review": review})
 		db.commit()
-		return render_template("success.html", message="Successfully submitted review")
+		return render_template('index.html', message = "Review submitted successfully!")
 
 
